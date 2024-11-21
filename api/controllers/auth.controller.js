@@ -50,3 +50,37 @@ export const signin = asyncHandler(async (req, res, next) => {
     }
 }
 )
+
+// @desc Google OAuth Sign in
+// @route POST /api/auth/google
+// @access Public
+export const google = asyncHandler(async (req, res, next) => {
+    try {
+        const { email, name, photo } = req.body;
+        let user = await User.findOne({ email });
+
+        if (user) {
+            // If user exists, generate token and return user data
+            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+            const { password, ...rest } = user._doc;
+            return res.cookie('access_token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict',
+            }).status(200).json(rest);
+        } else {
+            // User does not exist, request additional details from the frontend
+            return res.status(404).json({
+                success: false,
+                message: "Account not found. Please complete registration.",
+                requiresSignup: true, // Indicate that further input is needed
+                suggestedEmail: email,
+                suggestedName: name,
+                suggestedPhoto: photo,
+            });
+        }
+    } catch (err) {
+        console.error('OAuth Error:', err); // Log the error for debugging
+        return next(err); // Pass the original error to the error handling middleware
+    }
+});

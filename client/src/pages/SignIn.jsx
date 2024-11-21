@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { signInFailure, signInStart, signInSuccess } from '../redux/user/userSlice';
+import { signInFailure, signInStart, signInSuccess, clearError } from '../redux/user/userSlice';
+import OAuth from '../components/OAuth';
+
 const SignIn = () => {
   const [formData, setFormData] = useState({});
-  const { loading, error } = useSelector(state => state.user)
+  const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Clear error on component mount
+    dispatch(clearError());
+  }, [dispatch]);
 
   const handleChange = (e) => {
     setFormData({
@@ -18,6 +25,7 @@ const SignIn = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      dispatch(signInStart());
       const res = await fetch('api/auth/signin', {
         method: 'POST',
         headers: {
@@ -54,7 +62,7 @@ const SignIn = () => {
             placeholder="Email"
             className="border p-2 rounded-md border-gray-200 w-11/12 mb-4"
             id="email"
-            required={true}
+            required
             onChange={handleChange}
           />
           <input
@@ -62,7 +70,7 @@ const SignIn = () => {
             placeholder="Password"
             className="border p-2 rounded-md border-gray-200 w-11/12 mb-4"
             id="password"
-            required={true}
+            required
             onChange={handleChange}
           />
           <button
@@ -77,11 +85,19 @@ const SignIn = () => {
             <span className="px-4 text-gray-500">or</span>
             <hr className="flex-grow border-gray-300" />
           </div>
+          <OAuth />
         </form>
         {error && <p className="text-red-500 mt-3">{error}</p>}
+
+        <div className="flex justify-center w-full mt-5">
+          <p>Do not have an account?</p>
+          <Link to={'/signup'}>
+            <span className="text-blue-700 ml-2">Sign up</span>
+          </Link>
+        </div>
       </div>
     </div>
   );
-}
+};
 
-export default SignIn
+export default SignIn;

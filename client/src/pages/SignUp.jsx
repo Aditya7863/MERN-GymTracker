@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { clearError } from '../redux/user/userSlice'; // Assuming clearError is defined in the Redux slice
+import OAuth from '../components/OAuth';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +14,14 @@ const SignUp = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [passwordMatch, setPasswordMatch] = useState(true);
+  const [passwordStrength, setPasswordStrength] = useState('');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Clear any previous errors when the component mounts
+    dispatch(clearError());
+  }, [dispatch]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -24,6 +34,35 @@ const SignUp = () => {
       setPasswordMatch(
         id === 'confirmPassword' ? value === formData.password : formData.confirmPassword === value
       );
+      if (id === 'password') {
+        setPasswordStrength(checkPasswordStrength(value));
+      }
+    }
+  };
+
+  const checkPasswordStrength = (password) => {
+    const lengthCriteria = /.{8,}/;
+    const lowercaseCriteria = /[a-z]/;
+    const uppercaseCriteria = /[A-Z]/;
+    const numberCriteria = /\d/;
+    const specialCharCriteria = /[!@#$%^&*(),.?":{}|<>]/;
+
+    if (
+      password.length >= 8 &&
+      lowercaseCriteria.test(password) &&
+      uppercaseCriteria.test(password) &&
+      numberCriteria.test(password) &&
+      specialCharCriteria.test(password)
+    ) {
+      return 'Strong';
+    } else if (
+      password.length >= 6 &&
+      lowercaseCriteria.test(password) &&
+      uppercaseCriteria.test(password)
+    ) {
+      return 'Medium';
+    } else {
+      return 'Weak';
     }
   };
 
@@ -93,6 +132,22 @@ const SignUp = () => {
             value={formData.password}
             onChange={handleChange}
           />
+          {formData.password && (
+            <p className="text-sm mb-4">
+              Password Strength: 
+              <span
+                className={`${
+                  passwordStrength === 'Strong'
+                    ? 'text-green-500'
+                    : passwordStrength === 'Medium'
+                    ? 'text-yellow-500'
+                    : 'text-red-500'
+                }`}
+              >
+                {passwordStrength}
+              </span>
+            </p>
+          )}
           <input
             type="password"
             placeholder="Confirm Password"
@@ -103,7 +158,9 @@ const SignUp = () => {
             value={formData.confirmPassword}
             onChange={handleChange}
           />
-          {!passwordMatch && <p className="text-red-500 text-sm mb-4">Passwords do not match</p>}
+          {!passwordMatch && (
+            <p className="text-red-500 text-sm mb-4">Passwords do not match</p>
+          )}
           <button
             type="submit"
             className="bg-[#4C51BF] hover:opacity-95 disabled:opacity-80 text-white rounded-md p-2 w-11/12"
@@ -116,8 +173,15 @@ const SignUp = () => {
             <span className="px-4 text-gray-500">or</span>
             <hr className="flex-grow border-gray-300" />
           </div>
+          <OAuth />
         </form>
         {error && <p className="text-red-500 mt-3">{error}</p>}
+        <div className="flex justify-center w-full mt-5">
+          <p>Have an account?</p>
+          <Link to={'/signin'}>
+            <span className="text-blue-700 ml-2">Sign in</span>
+          </Link>
+        </div>
       </div>
     </div>
   );
